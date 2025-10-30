@@ -1,8 +1,17 @@
 <?php
-include('../config/db.php');
 session_start();
+include('../config/db.php');
+
+// Load PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require __DIR__ . '/../vendor/phpmailer/phpmailer/src/Exception.php';
+require __DIR__ . '/../vendor/phpmailer/phpmailer/src/PHPMailer.php';
+require __DIR__ . '/../vendor/phpmailer/phpmailer/src/SMTP.php';
 
 $msg = "";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $name = trim($_POST['name']);
   $email = trim($_POST['email']);
@@ -13,19 +22,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (mysqli_num_rows($check) > 0) {
     $msg = "<p class='error'>Email sudah digunakan. Gunakan email lain.</p>";
   } else {
-    // Generate token aktivasi unik
+    // Generate token aktivasi
     $token = bin2hex(random_bytes(16));
 
     $query = "INSERT INTO users (name,email,password,activation_token,status)
               VALUES ('$name','$email','$password','$token','inactive')";
     if (mysqli_query($conn, $query)) {
-      // Simpan token dan email untuk activate.php
-      $_SESSION['activation_token'] = $token;
-      $_SESSION['registered_email'] = $email;
 
-      // Arahkan ke halaman activate.php
-      header("Location: activate.php");
-      exit();
+      // Kirim email aktivasi
+      $mail = new PHPMailer(true);
+      try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'bagusdzakwan1021@gmail.com'; // ganti dengan email kamu
+        $mail->Password = 'fqmd aqjt euya tppn';    // ganti dengan app password (bukan password Gmail)
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        // Penerima
+        $mail->setFrom('EMAIL_KAMU@gmail.com', 'Admin Gudang');
+        $mail->addAddress($email, $name);
+
+        // Konten email
+        $mail->isHTML(true);
+        $mail->Subject = 'Aktivasi Akun Anda — Admin Gudang';
+        $activation_link = "http://localhost/user_management/public/activate.php?token=$token";
+        $mail->Body = "
+          <h3>Halo, $name 👋</h3>
+          <p>Terima kasih telah mendaftar. Silakan klik tautan di bawah ini untuk mengaktifkan akun Anda:</p>
+          <p><a href='$activation_link' style='display:inline-block;padding:10px 15px;background:#4a90e2;color:white;text-decoration:none;border-radius:5px;'>Aktifkan Akun</a></p>
+          <p>Jika tombol tidak berfungsi, salin dan buka tautan ini di browser:</p>
+          <p>$activation_link</p>
+          <br><small>Jangan balas email ini.</small>
+        ";
+
+        $mail->send();
+        $msg = "<p class='success'>Registrasi berhasil! Silakan cek email Anda untuk aktivasi akun.</p>";
+      } catch (Exception $e) {
+        $msg = "<p class='error'>Gagal mengirim email aktivasi. Error: {$mail->ErrorInfo}</p>";
+      }
     } else {
       $msg = "<p class='error'>Terjadi kesalahan saat registrasi.</p>";
     }

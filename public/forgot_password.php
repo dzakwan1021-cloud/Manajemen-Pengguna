@@ -1,5 +1,9 @@
 <?php
 include('../config/db.php');
+require '../vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 session_start();
 
 $msg = "";
@@ -9,16 +13,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
 
   if (mysqli_num_rows($check) === 1) {
+    // Generate token baru
     $token = bin2hex(random_bytes(16));
     mysqli_query($conn, "UPDATE users SET reset_token='$token' WHERE email='$email'");
 
-    // Simpan token dan email ke session
-    $_SESSION['reset_token'] = $token;
-    $_SESSION['reset_email'] = $email;
+    // Buat tautan reset password
+    $reset_link = "http://localhost/user_management/public/reset_password.php?token=$token";
 
-    // Arahkan ke link_reset.php
-    header("Location: link_reset.php");
-    exit();
+    // --- Kirim Email Reset Password ---
+    $mail = new PHPMailer(true);
+    try {
+      $mail->isSMTP();
+      $mail->Host       = 'smtp.gmail.com';
+      $mail->SMTPAuth   = true;
+      $mail->Username   = 'bagusdzakwan1021@gmail.com'; // Ganti dengan email kamu
+      $mail->Password   = 'fqmd aqjt euya tppn';        // Ganti dengan App Password
+      $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+      $mail->Port       = 587;
+
+      $mail->setFrom('bagusdzakwan1021@gmail.com', 'Admin Gudang');
+      $mail->addAddress($email);
+
+      $mail->isHTML(true);
+      $mail->Subject = 'Reset Password - Admin Gudang';
+      $mail->Body    = "
+        <h3>Permintaan Reset Password</h3>
+        <p>Kami menerima permintaan untuk mereset password akun Anda.</p>
+        <p>Klik tautan di bawah ini untuk membuat password baru:</p>
+        <p><a href='$reset_link' style='background:#4a90e2;color:white;padding:10px 20px;border-radius:5px;text-decoration:none;'>Reset Password</a></p>
+        <p>Jika Anda tidak meminta reset password, abaikan email ini.</p>
+      ";
+
+      $mail->send();
+      $msg = "<p class='success'>Tautan reset password telah dikirim ke email Anda.</p>";
+    } catch (Exception $e) {
+      $msg = "<p class='error'>Gagal mengirim email. Error: {$mail->ErrorInfo}</p>";
+    }
+
   } else {
     $msg = "<p class='error'>Email tidak ditemukan.</p>";
   }
