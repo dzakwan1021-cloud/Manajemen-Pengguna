@@ -1,30 +1,19 @@
 <?php
 include('../config/db.php');
 
-$msg = "";
+$token = $_GET['token'] ?? '';
 
-// Cek token
-if (!isset($_GET['token'])) {
-  $msg = "<p class='error'>Token tidak ditemukan.</p>";
-} else {
-  $token = $_GET['token'];
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  $new_pass = password_hash($_POST['password'], PASSWORD_DEFAULT);
+  $token = $_POST['token'];
 
-  // Cek apakah token valid
-  $result = mysqli_query($conn, "SELECT * FROM users WHERE reset_token='$token'");
-  if (mysqli_num_rows($result) === 0) {
-    $msg = "<p class='error'>Token tidak valid atau sudah digunakan.</p>";
+  $update = mysqli_query($conn, "UPDATE users SET password='$new_pass', reset_token=NULL WHERE reset_token='$token'");
+
+  if ($update) {
+    header("Location: index.php?success=Password berhasil diubah!");
+    exit();
   } else {
-    // Jika form disubmit
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-      $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-      $update = mysqli_query($conn, "UPDATE users SET password='$password', reset_token=NULL WHERE reset_token='$token'");
-
-      if ($update) {
-        $msg = "<p class='success'>Password berhasil direset!<br><a href='index.php'>Login Sekarang</a></p>";
-      } else {
-        $msg = "<p class='error'>Terjadi kesalahan saat menyimpan password baru.</p>";
-      }
-    }
+    $msg = "<p class='error'>Gagal mengubah password. Token tidak valid.</p>";
   }
 }
 ?>
@@ -33,24 +22,21 @@ if (!isset($_GET['token'])) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Password — Admin Gudang</title>
+  <title>Reset Password</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div class="form-container">
     <h2>Reset Password</h2>
-    <?= $msg; ?>
-
-    <?php if (isset($token) && mysqli_num_rows(mysqli_query($conn, "SELECT * FROM users WHERE reset_token='$token'")) > 0): ?>
-      <form method="POST">
-        <div class="input-group">
-          <label>Password Baru</label>
-          <input type="password" name="password" placeholder="Masukkan password baru" required>
-        </div>
-        <button type="submit" class="btn">Reset Password</button>
-      </form>
-    <?php endif; ?>
-
+    <?php if (!isset($msg)) $msg = ""; echo $msg; ?>
+    <form method="POST">
+      <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+      <div class="input-group">
+        <label>Password Baru</label>
+        <input type="password" name="password" placeholder="Masukkan password baru" required>
+      </div>
+      <button type="submit" class="btn">Simpan Password</button>
+    </form>
     <div class="links">
       <p><a href="index.php">Kembali ke Login</a></p>
     </div>

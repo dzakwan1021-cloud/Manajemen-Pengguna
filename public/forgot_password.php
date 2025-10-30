@@ -1,7 +1,9 @@
 <?php
 include('../config/db.php');
+session_start();
 
 $msg = "";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $email = trim($_POST['email']);
   $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
@@ -9,8 +11,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (mysqli_num_rows($check) === 1) {
     $token = bin2hex(random_bytes(16));
     mysqli_query($conn, "UPDATE users SET reset_token='$token' WHERE email='$email'");
-    $reset_link = "http://localhost/user_management/public/reset_password.php?token=$token";
-    $msg = "<p class='success'>Tautan reset password telah dikirim!<br><a href='$reset_link'>$reset_link</a></p>";
+
+    // Simpan token dan email ke session
+    $_SESSION['reset_token'] = $token;
+    $_SESSION['reset_email'] = $email;
+
+    // Arahkan ke link_reset.php
+    header("Location: link_reset.php");
+    exit();
   } else {
     $msg = "<p class='error'>Email tidak ditemukan.</p>";
   }
