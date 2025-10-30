@@ -1,0 +1,17 @@
+{
+    "name": "bagus/user_management",
+    "autoload": {
+        "psr-4": {
+            "Bagus\\UserManagement\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Muhammad Dzakwan",
+            "email": "dzakwan1021@gmail.com"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    }
+}
