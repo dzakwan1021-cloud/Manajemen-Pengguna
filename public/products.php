@@ -2,13 +2,15 @@
 include('../includes/auth_check.php');
 include('../config/db.php');
 
+// Ambil ID user yang sedang login
+$user_id = $_SESSION['user_id'];
+
 // Tambah produk
 if (isset($_POST['add'])) {
   $name = mysqli_real_escape_string($conn, $_POST['name']);
   $description = mysqli_real_escape_string($conn, $_POST['description']);
   $price = floatval($_POST['price']);
   $stock = intval($_POST['stock']);
-  $user_id = $_SESSION['user_id'];
 
   mysqli_query($conn, "INSERT INTO products (name, description, price, stock, created_by)
                        VALUES ('$name', '$description', '$price', '$stock', '$user_id')");
@@ -16,16 +18,16 @@ if (isset($_POST['add'])) {
   exit;
 }
 
-// Hapus produk
+// Hapus produk (hanya milik user yang login)
 if (isset($_GET['delete'])) {
   $id = intval($_GET['delete']);
-  mysqli_query($conn, "DELETE FROM products WHERE id='$id'");
+  mysqli_query($conn, "DELETE FROM products WHERE id='$id' AND created_by='$user_id'");
   header('Location: products.php');
   exit;
 }
 
-// Ambil semua produk
-$result = mysqli_query($conn, "SELECT * FROM products ORDER BY id DESC");
+// Ambil hanya produk milik user ini
+$result = mysqli_query($conn, "SELECT * FROM products WHERE created_by='$user_id' ORDER BY id DESC");
 ?>
 <!DOCTYPE html>
 <html lang="id">

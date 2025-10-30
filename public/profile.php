@@ -6,19 +6,12 @@ $user_id = $_SESSION['user_id'];
 $result = mysqli_query($conn, "SELECT * FROM users WHERE id='$user_id'");
 $user = mysqli_fetch_assoc($result);
 
-// Ubah profil (nama/email)
+// Ubah profil (hanya nama)
 if (isset($_POST['update_profile'])) {
   $name = mysqli_real_escape_string($conn, $_POST['name']);
-  $email = mysqli_real_escape_string($conn, $_POST['email']);
-
-  // Cek apakah email sudah digunakan oleh user lain
-  $check = mysqli_query($conn, "SELECT id FROM users WHERE email='$email' AND id!='$user_id'");
-  if (mysqli_num_rows($check) > 0) {
-    $error = "Email sudah digunakan oleh pengguna lain.";
-  } else {
-    mysqli_query($conn, "UPDATE users SET name='$name', email='$email' WHERE id='$user_id'");
-    $success = "Profil berhasil diperbarui.";
-  }
+  mysqli_query($conn, "UPDATE users SET name='$name' WHERE id='$user_id'");
+  $_SESSION['name'] = $name; // ✅ update session biar dashboard ikut berubah
+  $success = "Profil berhasil diperbarui.";
 }
 
 // Ubah password
@@ -80,6 +73,11 @@ if (isset($_POST['update_password'])) {
       border-radius: 6px;
     }
 
+    input[readonly] {
+      background: #f5f5f5;
+      color: #777;
+    }
+
     button {
       margin-top: 15px;
       padding: 8px 15px;
@@ -133,7 +131,7 @@ if (isset($_POST['update_password'])) {
       <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>
 
       <label>Email</label>
-      <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
+      <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" readonly>
 
       <button type="submit" name="update_profile">Perbarui Profil</button>
     </form>
